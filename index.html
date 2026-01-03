@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI Website Studio</title>
+<title>AI Project Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -13,59 +13,70 @@
   --text:#e5e7eb;
   --muted:#9ca3af;
   --accent:#f472b6;
-  --error:#f87171;
 }
 
 *{box-sizing:border-box}
-
 body{
   margin:0;
   height:100vh;
+  display:flex;
   font-family:Inter,system-ui,sans-serif;
   background:var(--bg);
   color:var(--text);
+}
+
+/* LAYOUT */
+.sidebar{
+  width:260px;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+}
+.main{
+  flex:1;
   display:flex;
   flex-direction:column;
 }
 
+/* HEADER */
 header{
-  padding:14px 20px;
-  background:var(--panel);
+  padding:12px 16px;
   border-bottom:1px solid var(--border);
   font-weight:600;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
 }
 
-header button{
-  background:none;
-  border:1px solid var(--border);
-  color:var(--muted);
-  padding:6px 10px;
-  border-radius:8px;
+/* FILE TREE */
+.tree{
+  flex:1;
+  padding:12px;
+  overflow:auto;
+  font-size:13px;
+}
+.file{
+  padding:4px 8px;
   cursor:pointer;
-  font-size:12px;
+  border-radius:6px;
 }
+.file:hover{background:#1e293b}
 
-.main{flex:1;position:relative}
-
-.view{
-  position:absolute;
-  inset:0;
-  display:none;
-}
-.view.active{display:block}
-
-.center{
+/* CONTENT */
+.content{
+  flex:1;
   display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100%;
-  color:var(--muted);
-  font-size:14px;
 }
-
+.editor, .preview{
+  flex:1;
+  border-left:1px solid var(--border);
+}
+pre{
+  margin:0;
+  padding:16px;
+  height:100%;
+  overflow:auto;
+  background:#020617;
+  font-size:13px;
+}
 iframe{
   width:100%;
   height:100%;
@@ -73,114 +84,51 @@ iframe{
   background:white;
 }
 
-pre{
-  margin:0;
-  padding:20px;
-  height:100%;
-  background:var(--panel);
-  overflow:auto;
-  white-space:pre-wrap;
-  font-size:13px;
-}
-
+/* CHAT */
 .chat{
+  height:180px;
+  border-top:1px solid var(--border);
   display:flex;
   flex-direction:column;
-  height:100%;
 }
-
-.chat-messages{
+.chat-log{
   flex:1;
-  padding:16px;
+  padding:10px;
   overflow:auto;
+  font-size:13px;
 }
-
-.msg{margin-bottom:10px;font-size:14px}
-.msg.user{color:#93c5fd}
-.msg.ai{color:#a7f3d0}
-.msg.error{color:var(--error)}
-
+.chat-log div{margin-bottom:6px}
 .chat-input{
-  border-top:1px solid var(--border);
-  padding:12px;
   display:flex;
-  gap:8px;
+  border-top:1px solid var(--border);
 }
-
 .chat-input input{
   flex:1;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:10px;
   padding:10px;
+  background:var(--panel);
+  border:none;
   color:var(--text);
 }
-
 .chat-input button{
   background:var(--accent);
   border:none;
-  color:#020617;
-  padding:10px 16px;
-  border-radius:10px;
+  padding:0 18px;
   cursor:pointer;
 }
 
-.footer{
-  height:64px;
-  background:var(--panel);
+/* FOOTER */
+footer{
+  padding:10px;
   border-top:1px solid var(--border);
   display:flex;
-  justify-content:space-around;
-  align-items:center;
+  justify-content:space-between;
 }
-
-.footer button{
-  background:none;
+button{
+  background:#1e293b;
   border:none;
-  color:var(--muted);
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-  font-size:11px;
-  cursor:pointer;
-}
-.footer button.active{color:var(--accent)}
-.footer svg{width:22px;height:22px;fill:currentColor}
-
-/* API KEY MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.75);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-}
-.modal-box{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:24px;
-  width:90%;
-  max-width:420px;
-}
-.modal-box input{
-  width:100%;
-  margin-top:12px;
-  background:#020617;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:12px;
   color:var(--text);
-}
-.modal-box button{
-  margin-top:16px;
-  width:100%;
-  background:var(--accent);
-  border:none;
-  padding:12px;
-  border-radius:10px;
+  padding:8px 14px;
+  border-radius:8px;
   cursor:pointer;
 }
 </style>
@@ -188,206 +136,143 @@ pre{
 
 <body>
 
-<header>
-  AI Website Studio
-  <button onclick="resetKey()">Change API Key</button>
-</header>
-
-<!-- API KEY MODAL -->
-<div class="modal" id="keyModal" style="display:none">
-  <div class="modal-box">
-    <h3>Enter OpenRouter API Key</h3>
-    <input id="apiKeyInput" placeholder="sk-or-v1-..." />
-    <button onclick="saveKey()">Save</button>
-  </div>
+<div class="sidebar">
+  <header>📁 Project Files</header>
+  <div class="tree" id="fileTree"></div>
 </div>
 
 <div class="main">
+  <header>AI Project Studio</header>
 
-  <div class="view active" id="previewView">
-    <div class="center" id="previewPlaceholder">Preview will appear here</div>
-    <iframe id="previewFrame" style="display:none"></iframe>
-  </div>
-
-  <div class="view" id="codeView">
-    <div class="center" id="codePlaceholder">Code will be generated here</div>
-    <pre id="codeOutput" style="display:none"></pre>
-  </div>
-
-  <div class="view" id="chatView">
-    <div class="chat">
-      <div class="chat-messages" id="chat"></div>
-      <div class="chat-input">
-        <input id="chatInput" placeholder="اكتب طلبك (إنشاء أو تعديل الموقع)..." />
-        <button onclick="sendChat()">Send</button>
-      </div>
+  <div class="content">
+    <div class="editor">
+      <pre id="editor">// Select a file</pre>
+    </div>
+    <div class="preview">
+      <iframe id="preview"></iframe>
     </div>
   </div>
 
+  <div class="chat">
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input">
+      <input id="chatInput" placeholder="اعمل موقع كافيه كامل / عدل صفحة / زود CSS..." />
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+
+  <footer>
+    <button onclick="exportZip()">Export ZIP</button>
+    <button onclick="reset()">New Project</button>
+  </footer>
 </div>
 
-<div class="footer">
-  <button class="active" onclick="switchView('preview')">
-    <svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7z"/></svg>
-    Preview
-  </button>
-  <button onclick="switchView('code')">
-    <svg viewBox="0 0 24 24"><path d="M8 17l-5-5 5-5M16 7l5 5-5 5"/></svg>
-    Code
-  </button>
-  <button onclick="switchView('chat')">
-    <svg viewBox="0 0 24 24"><path d="M4 4h16v12H6l-2 2z"/></svg>
-    Chat
-  </button>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 <script>
 const MODEL="mistralai/devstral-2512:free";
-let htmlCode="";
-let chatHistory=[];
+let apiKey=localStorage.getItem("OPENROUTER_KEY")||prompt("Enter OpenRouter API Key");
+localStorage.setItem("OPENROUTER_KEY",apiKey);
 
-/* 🔥 SYSTEM PROMPTS (قوية جدًا) */
-const SYSTEM_GENERATE = `
-You are a world-class senior frontend engineer and UI/UX designer.
+let files={};
+let selectedFile=null;
 
-ABSOLUTE RULES:
-- Return ONLY raw HTML.
-- NO explanations.
-- NO markdown.
-- NO comments.
-- NO text before or after HTML.
-- Start EXACTLY with <!DOCTYPE html>.
-- End EXACTLY with </html>.
+const SYSTEM = `
+You are a senior frontend architect.
 
-QUALITY:
-- Professional, classic, clean design.
-- Real commercial-level UI.
-- Proper spacing, typography, hierarchy.
-- Modern CSS (Flexbox, Grid).
-- Responsive.
-- Production-ready.
+Return ONLY a JSON object representing a FULL website project.
 
-TECH:
-- HTML + CSS + vanilla JS only.
-- All CSS and JS inline.
+Rules:
+- Keys = file paths (folders allowed)
+- Values = file contents
+- Include:
+  - index.html
+  - assets/css/style.css
+  - assets/js/main.js
+- Use modern, professional, classic design.
+- No markdown.
+- No explanations.
 `;
 
-const SYSTEM_MODIFY = `
-You are modifying an EXISTING website.
-
-RULES:
-- Modify ONLY the provided HTML.
-- Do NOT regenerate from scratch.
-- Keep the structure.
-- Return ONLY raw HTML.
-- Start with <!DOCTYPE html>.
-- End with </html>.
-`;
-
-function getKey(){ return localStorage.getItem("OPENROUTER_KEY"); }
-
-function saveKey(){
-  const k=document.getElementById("apiKeyInput").value.trim();
-  if(!k) return;
-  localStorage.setItem("OPENROUTER_KEY",k);
-  document.getElementById("keyModal").style.display="none";
-}
-
-function resetKey(){
-  localStorage.removeItem("OPENROUTER_KEY");
-  location.reload();
-}
-
-function cleanHTML(raw){
-  if(!raw) return "";
-  raw = raw.replace(/```[\s\S]*?```/g, m =>
-    m.replace(/^```[\w]*\n?/i,"").replace(/```$/i,"")
-  );
-  const start = raw.search(/<!DOCTYPE html>/i);
-  if(start !== -1) raw = raw.slice(start);
-  const end = raw.search(/<\/html>/i);
-  if(end !== -1) raw = raw.slice(0, end + 7);
-  return raw.trim();
-}
-
-function switchView(v){
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  document.getElementById(v+"View").classList.add("active");
-  document.querySelectorAll(".footer button").forEach(b=>b.classList.remove("active"));
-  document.querySelectorAll(".footer button")[["preview","code","chat"].indexOf(v)].classList.add("active");
-}
-
-async function sendChat(){
-  const key=getKey();
-  if(!key){
-    document.getElementById("keyModal").style.display="flex";
-    return;
-  }
-
-  const input=document.getElementById("chatInput");
-  const msg=input.value.trim();
-  if(!msg) return;
-  input.value="";
-
-  chatHistory.push({role:"user",content:msg});
-  renderChat();
-
-  try{
-    const system = htmlCode ? SYSTEM_MODIFY : SYSTEM_GENERATE;
-    const prompt = htmlCode ? htmlCode + "\n\nUser request:\n" + msg : msg;
-
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions",{
-      method:"POST",
-      headers:{
-        "Authorization":"Bearer "+key,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        model:MODEL,
-        messages:[
-          {role:"system",content:system},
-          {role:"user",content:prompt}
-        ],
-        max_tokens:8000
-      })
-    });
-
-    if(!res.ok) throw new Error("API error "+res.status);
-
-    const raw = (await res.json()).choices[0].message.content;
-    htmlCode = cleanHTML(raw);
-    showResult();
-
-    chatHistory.push({role:"ai",content:"تم التنفيذ بنجاح ✅"});
-  }catch(e){
-    chatHistory.push({role:"error",content:e.message});
-  }
-
-  renderChat();
-}
-
-function showResult(){
-  previewPlaceholder.style.display="none";
-  previewFrame.style.display="block";
-  previewFrame.srcdoc=htmlCode;
-
-  codePlaceholder.style.display="none";
-  codeOutput.style.display="block";
-  codeOutput.textContent=htmlCode;
-}
-
-function renderChat(){
-  const c=document.getElementById("chat");
-  c.innerHTML="";
-  chatHistory.forEach(m=>{
+function renderTree(){
+  fileTree.innerHTML="";
+  Object.keys(files).forEach(f=>{
     const d=document.createElement("div");
-    d.className="msg "+m.role;
-    d.textContent=m.content;
-    c.appendChild(d);
+    d.className="file";
+    d.textContent=f;
+    d.onclick=()=>openFile(f);
+    fileTree.appendChild(d);
   });
 }
 
-if(!getKey()) document.getElementById("keyModal").style.display="flex";
+function openFile(f){
+  selectedFile=f;
+  editor.textContent=files[f];
+}
+
+function buildPreview(){
+  if(!files["index.html"])return;
+  let html=files["index.html"];
+  html=html.replace("</head>",`
+<link rel="stylesheet" href="assets/css/style.css">
+</head>`);
+  html=html.replace("</body>",`
+<script>${files["assets/js/main.js"]||""}<\/script>
+</body>`);
+  preview.srcdoc=html;
+}
+
+async function send(){
+  const msg=chatInput.value.trim();
+  if(!msg)return;
+  chatInput.value="";
+  chatLog.innerHTML+=`<div>🧑 ${msg}</div>`;
+
+  const prompt = Object.keys(files).length
+    ? JSON.stringify(files)+ "\n\nModify project: " + msg
+    : msg;
+
+  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+    method:"POST",
+    headers:{
+      "Authorization":"Bearer "+apiKey,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      model:MODEL,
+      messages:[
+        {role:"system",content:SYSTEM},
+        {role:"user",content:prompt}
+      ],
+      max_tokens:8000
+    })
+  });
+
+  const json=await res.json();
+  files=JSON.parse(json.choices[0].message.content);
+
+  renderTree();
+  buildPreview();
+  chatLog.innerHTML+=`<div>🤖 Project updated</div>`;
+}
+
+function exportZip(){
+  const zip=new JSZip();
+  Object.keys(files).forEach(f=>zip.file(f,files[f]));
+  zip.generateAsync({type:"blob"}).then(b=>{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(b);
+    a.download="project.zip";
+    a.click();
+  });
+}
+
+function reset(){
+  files={};
+  renderTree();
+  editor.textContent="";
+  preview.srcdoc="";
+}
 </script>
 
 </body>
