@@ -95,10 +95,7 @@ pre{
   overflow:auto;
 }
 
-.msg{
-  margin-bottom:10px;
-  font-size:14px;
-}
+.msg{margin-bottom:10px;font-size:14px}
 .msg.user{color:#93c5fd}
 .msg.ai{color:#a7f3d0}
 .msg.error{color:var(--error)}
@@ -168,7 +165,6 @@ pre{
   width:90%;
   max-width:420px;
 }
-.modal-box h2{margin-top:0}
 .modal-box input{
   width:100%;
   margin-top:12px;
@@ -200,7 +196,7 @@ pre{
 <!-- API KEY MODAL -->
 <div class="modal" id="keyModal" style="display:none">
   <div class="modal-box">
-    <h2>Enter OpenRouter API Key</h2>
+    <h3>Enter OpenRouter API Key</h3>
     <input id="apiKeyInput" placeholder="sk-or-v1-..." />
     <button onclick="saveKey()">Save</button>
   </div>
@@ -222,7 +218,7 @@ pre{
     <div class="chat">
       <div class="chat-messages" id="chat"></div>
       <div class="chat-input">
-        <input id="chatInput" placeholder="اكتب طلبك هنا (إنشاء أو تعديل الموقع)..." />
+        <input id="chatInput" placeholder="اكتب طلبك (إنشاء أو تعديل الموقع)..." />
         <button onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -247,26 +243,71 @@ pre{
 
 <script>
 const MODEL="mistralai/devstral-2512:free";
-let htmlCode="";          // ❌ لا حفظ بعد إغلاق الصفحة
-let chatHistory=[];       // ❌ Session only
+let htmlCode="";
+let chatHistory=[];
 
-function getKey(){return localStorage.getItem("OPENROUTER_KEY")}
+/* 🔥 SYSTEM PROMPTS (قوية جدًا) */
+const SYSTEM_GENERATE = `
+You are a world-class senior frontend engineer and UI/UX designer.
+
+ABSOLUTE RULES:
+- Return ONLY raw HTML.
+- NO explanations.
+- NO markdown.
+- NO comments.
+- NO text before or after HTML.
+- Start EXACTLY with <!DOCTYPE html>.
+- End EXACTLY with </html>.
+
+QUALITY:
+- Professional, classic, clean design.
+- Real commercial-level UI.
+- Proper spacing, typography, hierarchy.
+- Modern CSS (Flexbox, Grid).
+- Responsive.
+- Production-ready.
+
+TECH:
+- HTML + CSS + vanilla JS only.
+- All CSS and JS inline.
+`;
+
+const SYSTEM_MODIFY = `
+You are modifying an EXISTING website.
+
+RULES:
+- Modify ONLY the provided HTML.
+- Do NOT regenerate from scratch.
+- Keep the structure.
+- Return ONLY raw HTML.
+- Start with <!DOCTYPE html>.
+- End with </html>.
+`;
+
+function getKey(){ return localStorage.getItem("OPENROUTER_KEY"); }
+
 function saveKey(){
   const k=document.getElementById("apiKeyInput").value.trim();
-  if(!k)return;
+  if(!k) return;
   localStorage.setItem("OPENROUTER_KEY",k);
   document.getElementById("keyModal").style.display="none";
 }
+
 function resetKey(){
   localStorage.removeItem("OPENROUTER_KEY");
   location.reload();
 }
 
 function cleanHTML(raw){
-  return raw
-    .replace(/^```[\w]*\n?/i,"")
-    .replace(/```$/i,"")
-    .trim();
+  if(!raw) return "";
+  raw = raw.replace(/```[\s\S]*?```/g, m =>
+    m.replace(/^```[\w]*\n?/i,"").replace(/```$/i,"")
+  );
+  const start = raw.search(/<!DOCTYPE html>/i);
+  if(start !== -1) raw = raw.slice(start);
+  const end = raw.search(/<\/html>/i);
+  if(end !== -1) raw = raw.slice(0, end + 7);
+  return raw.trim();
 }
 
 function switchView(v){
@@ -285,20 +326,17 @@ async function sendChat(){
 
   const input=document.getElementById("chatInput");
   const msg=input.value.trim();
-  if(!msg)return;
+  if(!msg) return;
   input.value="";
 
   chatHistory.push({role:"user",content:msg});
   renderChat();
 
   try{
-    const system=htmlCode
-      ? "Modify ONLY the existing HTML. Return ONLY raw HTML."
-      : "Generate a FULL professional website. Return ONLY raw HTML.";
+    const system = htmlCode ? SYSTEM_MODIFY : SYSTEM_GENERATE;
+    const prompt = htmlCode ? htmlCode + "\n\nUser request:\n" + msg : msg;
 
-    const prompt=htmlCode ? htmlCode+"\n\nUser request:\n"+msg : msg;
-
-    const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions",{
       method:"POST",
       headers:{
         "Authorization":"Bearer "+key,
@@ -316,11 +354,11 @@ async function sendChat(){
 
     if(!res.ok) throw new Error("API error "+res.status);
 
-    const raw=(await res.json()).choices[0].message.content;
-    htmlCode=cleanHTML(raw);
+    const raw = (await res.json()).choices[0].message.content;
+    htmlCode = cleanHTML(raw);
     showResult();
 
-    chatHistory.push({role:"ai",content:"تم التنفيذ ✅ روح Preview أو Code"});
+    chatHistory.push({role:"ai",content:"تم التنفيذ بنجاح ✅"});
   }catch(e){
     chatHistory.push({role:"error",content:e.message});
   }
