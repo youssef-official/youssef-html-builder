@@ -13,6 +13,8 @@
   --text:#e5e7eb;
   --muted:#9ca3af;
   --accent:#f472b6;
+  --error:#f87171;
+  --success:#34d399;
 }
 
 *{box-sizing:border-box}
@@ -34,10 +36,7 @@ header{
   font-weight:600;
 }
 
-.main{
-  flex:1;
-  position:relative;
-}
+.main{flex:1;position:relative}
 
 .view{
   position:absolute;
@@ -53,7 +52,6 @@ header{
   justify-content:center;
   height:100%;
   color:var(--muted);
-  font-size:15px;
 }
 
 iframe{
@@ -92,6 +90,7 @@ pre{
 
 .msg.user{color:#93c5fd}
 .msg.ai{color:#a7f3d0}
+.msg.error{color:var(--error)}
 
 .chat-input{
   border-top:1px solid var(--border);
@@ -139,7 +138,6 @@ pre{
 }
 
 .footer button.active{color:var(--accent)}
-
 .footer svg{width:22px;height:22px;fill:currentColor}
 </style>
 </head>
@@ -156,7 +154,7 @@ pre{
   </div>
 
   <div class="view" id="codeView">
-    <div class="center" id="codePlaceholder">Code will be generated soon</div>
+    <div class="center" id="codePlaceholder">Code will be generated here</div>
     <pre id="codeOutput" style="display:none"></pre>
   </div>
 
@@ -164,7 +162,7 @@ pre{
     <div class="chat">
       <div class="chat-messages" id="chat"></div>
       <div class="chat-input">
-        <input id="chatInput" placeholder="عاوز موقع ايه؟ أو عدل على الموقع الحالي..." />
+        <input id="chatInput" placeholder="عاوز موقع ايه؟ أو عدّل على الموقع الحالي..." />
         <button onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -188,20 +186,19 @@ pre{
 </div>
 
 <script>
-const API_KEY="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";
+const API_KEY="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";
 const MODEL="mistralai/devstral-2512:free";
 
 let htmlCode=localStorage.getItem("html")||"";
 let chatHistory=JSON.parse(localStorage.getItem("chat")||"[]");
 
-const systemGenerate=`You are a senior frontend engineer.
+const SYSTEM_GENERATE=`You are a senior frontend engineer.
 Generate a FULL professional website.
 HTML + CSS + JS inline.
-Dark or suitable theme.
 High-end modern design.
 Return ONLY HTML.`;
 
-const systemModify=`Modify ONLY the existing HTML.
+const SYSTEM_MODIFY=`Modify ONLY the existing HTML.
 Do NOT regenerate from scratch.
 Return ONLY updated HTML.`;
 
@@ -221,32 +218,52 @@ async function sendChat(){
   chatHistory.push({role:"user",content:msg});
   renderChat();
 
-  const system=htmlCode ? systemModify : systemGenerate;
-  const prompt=htmlCode ? htmlCode+"\n\nUser request:\n"+msg : msg;
+  try{
+    const system=htmlCode ? SYSTEM_MODIFY : SYSTEM_GENERATE;
+    const userPrompt=htmlCode ? htmlCode+"\n\nUser request:\n"+msg : msg;
 
-  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
-    method:"POST",
-    headers:{
-      "Authorization":"Bearer "+API_KEY,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({
-      model:MODEL,
-      messages:[
-        {role:"system",content:system},
-        {role:"user",content:prompt}
-      ],
-      max_tokens:8000
-    })
-  });
+    const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+      method:"POST",
+      headers:{
+        "Authorization":"Bearer "+API_KEY,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        model:MODEL,
+        messages:[
+          {role:"system",content:system},
+          {role:"user",content:userPrompt}
+        ],
+        max_tokens:8000
+      })
+    });
 
-  const data=await res.json();
-  htmlCode=data.choices[0].message.content;
+    if(!res.ok){
+      throw new Error("API Error: "+res.status);
+    }
 
-  localStorage.setItem("html",htmlCode);
-  showResult();
+    const data=await res.json();
 
-  chatHistory.push({role:"ai",content:"تم إنشاء / تعديل الموقع. روح Preview أو Code 👌"});
+    if(!data.choices || !data.choices[0]){
+      throw new Error("Invalid AI response");
+    }
+
+    htmlCode=data.choices[0].message.content;
+    localStorage.setItem("html",htmlCode);
+    showResult();
+
+    chatHistory.push({
+      role:"ai",
+      content:"تم إنشاء / تعديل الموقع بنجاح ✅ روح Preview أو Code"
+    });
+
+  }catch(err){
+    chatHistory.push({
+      role:"error",
+      content:"حصل خطأ ❌ : "+err.message
+    });
+  }
+
   renderChat();
 }
 
