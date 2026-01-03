@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Website Studio Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#0b1020;
+  --panel:#020617;
+  --border:#1e293b;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --accent:#f472b6;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  height:100vh;
+  font-family:Inter,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+}
+
+header{
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  font-weight:600;
+}
+
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.prompt-bar{
+  padding:14px;
+  border-bottom:1px solid var(--border);
+}
+
+textarea{
+  width:100%;
+  background:#020617;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  color:var(--text);
+  resize:vertical;
+  font-size:14px;
+}
+
+button.primary{
+  margin-top:10px;
+  background:linear-gradient(135deg,#ec4899,#ef4444);
+  border:none;
+  padding:12px 22px;
+  border-radius:12px;
+  color:white;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.workspace{
+  flex:1;
+  position:relative;
+}
+
+.view{
+  position:absolute;
+  inset:0;
+  display:none;
+}
+
+.view.active{display:block}
+
+iframe{
+  width:100%;
+  height:100%;
+  border:none;
+  background:white;
+}
+
+pre{
+  margin:0;
+  height:100%;
+  padding:20px;
+  background:#020617;
+  overflow:auto;
+  white-space:pre-wrap;
+  font-size:13px;
+}
+
+.chat{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+.chat-messages{
+  flex:1;
+  padding:16px;
+  overflow:auto;
+}
+
+.msg{
+  margin-bottom:12px;
+  font-size:14px;
+}
+
+.msg.user{color:#93c5fd}
+.msg.ai{color:#a7f3d0}
+
+.chat-input{
+  border-top:1px solid var(--border);
+  padding:12px;
+  display:flex;
+  gap:8px;
+}
+
+.chat-input input{
+  flex:1;
+  background:#020617;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  color:var(--text);
+}
+
+.chat-input button{
+  background:var(--accent);
+  border:none;
+  color:#020617;
+  padding:10px 16px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.action-bar{
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
+}
+
+.action-bar button{
+  background:#020617;
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.footer{
+  height:64px;
+  background:var(--panel);
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.footer button{
+  background:none;
+  border:none;
+  color:var(--muted);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:11px;
+  gap:4px;
+  cursor:pointer;
+}
+
+.footer button.active{color:var(--accent)}
+
+.footer svg{width:22px;height:22px;fill:currentColor}
+</style>
+</head>
+
+<body>
+
+<header>AI Website Studio Pro</header>
+
+<div class="main">
+
+<div class="prompt-bar">
+  <textarea id="prompt" placeholder="Build a modern cafe website with 3D hero section and dark theme"></textarea>
+  <button class="primary" onclick="generate()">Generate</button>
+</div>
+
+<div class="workspace">
+
+  <div class="view active" id="previewView">
+    <iframe id="preview"></iframe>
+  </div>
+
+  <div class="view" id="codeView">
+    <div class="action-bar">
+      <button onclick="copyCode()">Copy</button>
+      <button onclick="downloadCode()">Download</button>
+    </div>
+    <pre id="code"></pre>
+  </div>
+
+  <div class="view" id="chatView">
+    <div class="chat">
+      <div class="chat-messages" id="chat"></div>
+      <div class="chat-input">
+        <input id="chatInput" placeholder="عدل الكود: ضيف زر، غير لون، زود سيكشن..." />
+        <button onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="footer">
+  <button class="active" onclick="switchView('preview')">
+    <svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+    Preview
+  </button>
+  <button onclick="switchView('code')">
+    <svg viewBox="0 0 24 24"><path d="M8 17l-5-5 5-5M16 7l5 5-5 5"/></svg>
+    Code
+  </button>
+  <button onclick="switchView('chat')">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v12H6l-2 2V4z"/></svg>
+    Chat
+  </button>
+</div>
+
+<script>
+const API_KEY="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";
+const MODEL="mistralai/devstral-2512:free";
+
+let htmlCode=localStorage.getItem("project_html")||"";
+let chatHistory=JSON.parse(localStorage.getItem("chat")||"[]");
+
+const systemBase=`You are a senior frontend engineer.
+Return ONLY full HTML.
+Inline CSS and JS.
+Dark theme.
+Professional design.
+`;
+
+function switchView(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  document.getElementById(v+"View").classList.add("active");
+  document.querySelectorAll(".footer button").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".footer button")[["preview","code","chat"].indexOf(v)].classList.add("active");
+}
+
+async function generate(){
+  const prompt=document.getElementById("prompt").value;
+  const res=await callAI(systemBase,prompt);
+  setHTML(res);
+}
+
+async function sendChat(){
+  const msg=document.getElementById("chatInput").value;
+  if(!msg)return;
+  chatHistory.push({role:"user",content:msg});
+  renderChat();
+  const res=await callAI(
+    systemBase+"Modify ONLY the existing HTML code. Do not regenerate.",
+    htmlCode+"\n\nUser request:\n"+msg
+  );
+  setHTML(res);
+}
+
+async function callAI(system,user){
+  const r=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+    method:"POST",
+    headers:{
+      "Authorization":"Bearer "+API_KEY,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      model:MODEL,
+      messages:[
+        {role:"system",content:system},
+        {role:"user",content:user}
+      ],
+      max_tokens:8000
+    })
+  });
+  return (await r.json()).choices[0].message.content;
+}
+
+function setHTML(code){
+  htmlCode=code;
+  localStorage.setItem("project_html",code);
+  document.getElementById("code").textContent=code;
+  document.getElementById("preview").srcdoc=code;
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(htmlCode);
+}
+
+function downloadCode(){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([htmlCode],{type:"text/html"}));
+  a.download="website.html";
+  a.click();
+}
+
+function renderChat(){
+  const c=document.getElementById("chat");
+  c.innerHTML="";
+  chatHistory.forEach(m=>{
+    const d=document.createElement("div");
+    d.className="msg "+m.role;
+    d.textContent=m.content;
+    c.appendChild(d);
+  });
+  localStorage.setItem("chat",JSON.stringify(chatHistory));
+}
+
+renderChat();
+if(htmlCode)setHTML(htmlCode);
+</script>
+
+</body>
+</html>
