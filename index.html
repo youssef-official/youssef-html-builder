@@ -63,6 +63,7 @@ header button{
   justify-content:center;
   height:100%;
   color:var(--muted);
+  font-size:14px;
 }
 
 iframe{
@@ -94,7 +95,10 @@ pre{
   overflow:auto;
 }
 
-.msg{margin-bottom:10px;font-size:14px}
+.msg{
+  margin-bottom:10px;
+  font-size:14px;
+}
 .msg.user{color:#93c5fd}
 .msg.ai{color:#a7f3d0}
 .msg.error{color:var(--error)}
@@ -197,7 +201,6 @@ pre{
 <div class="modal" id="keyModal" style="display:none">
   <div class="modal-box">
     <h2>Enter OpenRouter API Key</h2>
-    <p class="muted">Your key is stored locally only.</p>
     <input id="apiKeyInput" placeholder="sk-or-v1-..." />
     <button onclick="saveKey()">Save</button>
   </div>
@@ -219,7 +222,7 @@ pre{
     <div class="chat">
       <div class="chat-messages" id="chat"></div>
       <div class="chat-input">
-        <input id="chatInput" placeholder="عاوز موقع ايه؟ أو عدّل على الموجود..." />
+        <input id="chatInput" placeholder="اكتب طلبك هنا (إنشاء أو تعديل الموقع)..." />
         <button onclick="sendChat()">Send</button>
       </div>
     </div>
@@ -244,8 +247,8 @@ pre{
 
 <script>
 const MODEL="mistralai/devstral-2512:free";
-let htmlCode=localStorage.getItem("html")||"";
-let chatHistory=JSON.parse(localStorage.getItem("chat")||"[]");
+let htmlCode="";          // ❌ لا حفظ بعد إغلاق الصفحة
+let chatHistory=[];       // ❌ Session only
 
 function getKey(){return localStorage.getItem("OPENROUTER_KEY")}
 function saveKey(){
@@ -259,6 +262,13 @@ function resetKey(){
   location.reload();
 }
 
+function cleanHTML(raw){
+  return raw
+    .replace(/^```[\w]*\n?/i,"")
+    .replace(/```$/i,"")
+    .trim();
+}
+
 function switchView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
   document.getElementById(v+"View").classList.add("active");
@@ -268,7 +278,10 @@ function switchView(v){
 
 async function sendChat(){
   const key=getKey();
-  if(!key)return;
+  if(!key){
+    document.getElementById("keyModal").style.display="flex";
+    return;
+  }
 
   const input=document.getElementById("chatInput");
   const msg=input.value.trim();
@@ -280,8 +293,8 @@ async function sendChat(){
 
   try{
     const system=htmlCode
-      ? "Modify ONLY the existing HTML. Return ONLY HTML."
-      : "Generate a FULL professional website. Return ONLY HTML.";
+      ? "Modify ONLY the existing HTML. Return ONLY raw HTML."
+      : "Generate a FULL professional website. Return ONLY raw HTML.";
 
     const prompt=htmlCode ? htmlCode+"\n\nUser request:\n"+msg : msg;
 
@@ -303,9 +316,10 @@ async function sendChat(){
 
     if(!res.ok) throw new Error("API error "+res.status);
 
-    htmlCode=(await res.json()).choices[0].message.content;
-    localStorage.setItem("html",htmlCode);
+    const raw=(await res.json()).choices[0].message.content;
+    htmlCode=cleanHTML(raw);
     showResult();
+
     chatHistory.push({role:"ai",content:"تم التنفيذ ✅ روح Preview أو Code"});
   }catch(e){
     chatHistory.push({role:"error",content:e.message});
@@ -318,6 +332,7 @@ function showResult(){
   previewPlaceholder.style.display="none";
   previewFrame.style.display="block";
   previewFrame.srcdoc=htmlCode;
+
   codePlaceholder.style.display="none";
   codeOutput.style.display="block";
   codeOutput.textContent=htmlCode;
@@ -332,12 +347,9 @@ function renderChat(){
     d.textContent=m.content;
     c.appendChild(d);
   });
-  localStorage.setItem("chat",JSON.stringify(chatHistory));
 }
 
 if(!getKey()) document.getElementById("keyModal").style.display="flex";
-if(htmlCode) showResult();
-renderChat();
 </script>
 
 </body>
