@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI Website Studio Pro</title>
+<title>AI Website Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -28,46 +28,13 @@ body{
 }
 
 header{
+  padding:14px 20px;
   background:var(--panel);
   border-bottom:1px solid var(--border);
-  padding:14px 20px;
   font-weight:600;
 }
 
 .main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
-
-.prompt-bar{
-  padding:14px;
-  border-bottom:1px solid var(--border);
-}
-
-textarea{
-  width:100%;
-  background:#020617;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:14px;
-  color:var(--text);
-  resize:vertical;
-  font-size:14px;
-}
-
-button.primary{
-  margin-top:10px;
-  background:linear-gradient(135deg,#ec4899,#ef4444);
-  border:none;
-  padding:12px 22px;
-  border-radius:12px;
-  color:white;
-  font-size:15px;
-  cursor:pointer;
-}
-
-.workspace{
   flex:1;
   position:relative;
 }
@@ -80,6 +47,15 @@ button.primary{
 
 .view.active{display:block}
 
+.center{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  color:var(--muted);
+  font-size:15px;
+}
+
 iframe{
   width:100%;
   height:100%;
@@ -89,9 +65,9 @@ iframe{
 
 pre{
   margin:0;
-  height:100%;
   padding:20px;
-  background:#020617;
+  height:100%;
+  background:var(--panel);
   overflow:auto;
   white-space:pre-wrap;
   font-size:13px;
@@ -110,7 +86,7 @@ pre{
 }
 
 .msg{
-  margin-bottom:12px;
+  margin-bottom:10px;
   font-size:14px;
 }
 
@@ -126,7 +102,7 @@ pre{
 
 .chat-input input{
   flex:1;
-  background:#020617;
+  background:var(--panel);
   border:1px solid var(--border);
   border-radius:10px;
   padding:10px;
@@ -138,23 +114,6 @@ pre{
   border:none;
   color:#020617;
   padding:10px 16px;
-  border-radius:10px;
-  cursor:pointer;
-}
-
-.action-bar{
-  position:absolute;
-  top:12px;
-  right:12px;
-  display:flex;
-  gap:8px;
-}
-
-.action-bar button{
-  background:#020617;
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:8px 12px;
   border-radius:10px;
   cursor:pointer;
 }
@@ -174,9 +133,8 @@ pre{
   color:var(--muted);
   display:flex;
   flex-direction:column;
-  align-items:center;
-  font-size:11px;
   gap:4px;
+  font-size:11px;
   cursor:pointer;
 }
 
@@ -188,45 +146,35 @@ pre{
 
 <body>
 
-<header>AI Website Studio Pro</header>
+<header>AI Website Studio</header>
 
 <div class="main">
 
-<div class="prompt-bar">
-  <textarea id="prompt" placeholder="Build a modern cafe website with 3D hero section and dark theme"></textarea>
-  <button class="primary" onclick="generate()">Generate</button>
-</div>
-
-<div class="workspace">
-
   <div class="view active" id="previewView">
-    <iframe id="preview"></iframe>
+    <div class="center" id="previewPlaceholder">Preview will appear here after generation</div>
+    <iframe id="previewFrame" style="display:none"></iframe>
   </div>
 
   <div class="view" id="codeView">
-    <div class="action-bar">
-      <button onclick="copyCode()">Copy</button>
-      <button onclick="downloadCode()">Download</button>
-    </div>
-    <pre id="code"></pre>
+    <div class="center" id="codePlaceholder">Code will be generated soon</div>
+    <pre id="codeOutput" style="display:none"></pre>
   </div>
 
   <div class="view" id="chatView">
     <div class="chat">
       <div class="chat-messages" id="chat"></div>
       <div class="chat-input">
-        <input id="chatInput" placeholder="عدل الكود: ضيف زر، غير لون، زود سيكشن..." />
+        <input id="chatInput" placeholder="عاوز موقع ايه؟ أو عدل على الموقع الحالي..." />
         <button onclick="sendChat()">Send</button>
       </div>
     </div>
   </div>
 
 </div>
-</div>
 
 <div class="footer">
   <button class="active" onclick="switchView('preview')">
-    <svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7z"/></svg>
     Preview
   </button>
   <button onclick="switchView('code')">
@@ -234,7 +182,7 @@ pre{
     Code
   </button>
   <button onclick="switchView('chat')">
-    <svg viewBox="0 0 24 24"><path d="M4 4h16v12H6l-2 2V4z"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v12H6l-2 2z"/></svg>
     Chat
   </button>
 </div>
@@ -243,15 +191,19 @@ pre{
 const API_KEY="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";
 const MODEL="mistralai/devstral-2512:free";
 
-let htmlCode=localStorage.getItem("project_html")||"";
+let htmlCode=localStorage.getItem("html")||"";
 let chatHistory=JSON.parse(localStorage.getItem("chat")||"[]");
 
-const systemBase=`You are a senior frontend engineer.
-Return ONLY full HTML.
-Inline CSS and JS.
-Dark theme.
-Professional design.
-`;
+const systemGenerate=`You are a senior frontend engineer.
+Generate a FULL professional website.
+HTML + CSS + JS inline.
+Dark or suitable theme.
+High-end modern design.
+Return ONLY HTML.`;
+
+const systemModify=`Modify ONLY the existing HTML.
+Do NOT regenerate from scratch.
+Return ONLY updated HTML.`;
 
 function switchView(v){
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
@@ -260,26 +212,19 @@ function switchView(v){
   document.querySelectorAll(".footer button")[["preview","code","chat"].indexOf(v)].classList.add("active");
 }
 
-async function generate(){
-  const prompt=document.getElementById("prompt").value;
-  const res=await callAI(systemBase,prompt);
-  setHTML(res);
-}
-
 async function sendChat(){
-  const msg=document.getElementById("chatInput").value;
-  if(!msg)return;
+  const input=document.getElementById("chatInput");
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value="";
+
   chatHistory.push({role:"user",content:msg});
   renderChat();
-  const res=await callAI(
-    systemBase+"Modify ONLY the existing HTML code. Do not regenerate.",
-    htmlCode+"\n\nUser request:\n"+msg
-  );
-  setHTML(res);
-}
 
-async function callAI(system,user){
-  const r=await fetch("https://openrouter.ai/api/v1/chat/completions",{
+  const system=htmlCode ? systemModify : systemGenerate;
+  const prompt=htmlCode ? htmlCode+"\n\nUser request:\n"+msg : msg;
+
+  const res=await fetch("https://openrouter.ai/api/v1/chat/completions",{
     method:"POST",
     headers:{
       "Authorization":"Bearer "+API_KEY,
@@ -289,30 +234,30 @@ async function callAI(system,user){
       model:MODEL,
       messages:[
         {role:"system",content:system},
-        {role:"user",content:user}
+        {role:"user",content:prompt}
       ],
       max_tokens:8000
     })
   });
-  return (await r.json()).choices[0].message.content;
+
+  const data=await res.json();
+  htmlCode=data.choices[0].message.content;
+
+  localStorage.setItem("html",htmlCode);
+  showResult();
+
+  chatHistory.push({role:"ai",content:"تم إنشاء / تعديل الموقع. روح Preview أو Code 👌"});
+  renderChat();
 }
 
-function setHTML(code){
-  htmlCode=code;
-  localStorage.setItem("project_html",code);
-  document.getElementById("code").textContent=code;
-  document.getElementById("preview").srcdoc=code;
-}
+function showResult(){
+  document.getElementById("previewPlaceholder").style.display="none";
+  document.getElementById("previewFrame").style.display="block";
+  document.getElementById("previewFrame").srcdoc=htmlCode;
 
-function copyCode(){
-  navigator.clipboard.writeText(htmlCode);
-}
-
-function downloadCode(){
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([htmlCode],{type:"text/html"}));
-  a.download="website.html";
-  a.click();
+  document.getElementById("codePlaceholder").style.display="none";
+  document.getElementById("codeOutput").style.display="block";
+  document.getElementById("codeOutput").textContent=htmlCode;
 }
 
 function renderChat(){
@@ -327,8 +272,8 @@ function renderChat(){
   localStorage.setItem("chat",JSON.stringify(chatHistory));
 }
 
+if(htmlCode) showResult();
 renderChat();
-if(htmlCode)setHTML(htmlCode);
 </script>
 
 </body>
